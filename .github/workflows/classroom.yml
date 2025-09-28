@@ -1,80 +1,39 @@
-name: Autograding Tests
-'on':
-- push
-- repository_dispatch
+name: Autograding
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  repository_dispatch:
 permissions:
+  contents: read
   checks: write
   actions: read
-  contents: read
+  pull-requests: read
+
 jobs:
-  run-autograding-tests:
+  autograding:
     runs-on: ubuntu-latest
-    if: github.actor != 'github-classroom[bot]'
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    - name: A3 · mean_squared_error
-      id: a3-mean_squared_error
-      uses: classroom-resources/autograding-command-grader@v1
-      with:
-        test-name: A3 · mean_squared_error
-        setup-command: python -m pip install --upgrade pip && pip install -r requirements.txt
-        command: pytest -q test_a3_regression.py::test_mean_squared_error
-        timeout: 60
-        max-score: 10
-    - name: A3 · SimpleGradientDescentModel lernt
-      id: a3-simplegradientdescentmodel-lernt
-      uses: classroom-resources/autograding-command-grader@v1
-      with:
-        test-name: A3 · SimpleGradientDescentModel lernt
-        setup-command: python -m pip install --upgrade pip && pip install -r requirements.txt
-        command: pytest -q test_a3_regression.py::test_simple_gd_model_exists_and_learns
-        timeout: 10
-        max-score: 25
-    - name: A3 · GD fit & fit_vector
-      id: a3-gd-fit-fit_vector
-      uses: classroom-resources/autograding-command-grader@v1
-      with:
-        test-name: A3 · GD fit & fit_vector
-        setup-command: python -m pip install --upgrade pip && pip install -r requirements.txt
-        command: pytest -q test_a3_regression.py::test_gd_model_fit_and_fit_vector
-        timeout: 10
-        max-score: 20
-    - name: A3 · Multidim GD (vector)
-      id: a3-multidim-gd-vector
-      uses: classroom-resources/autograding-command-grader@v1
-      with:
-        test-name: A3 · Multidim GD (vector)
-        setup-command: python -m pip install --upgrade pip && pip install -r requirements.txt
-        command: pytest -q test_a3_regression.py::test_multidim_gradient_descent_vector
-        timeout: 10
-        max-score: 15
-    - name: A3 · OptimalLinearModel (closed form)
-      id: a3-optimallinearmodel-closed-form
-      uses: classroom-resources/autograding-command-grader@v1
-      with:
-        test-name: A3 · OptimalLinearModel (closed form)
-        setup-command: python -m pip install --upgrade pip && pip install -r requirements.txt
-        command: pytest -q test_a3_regression.py::test_optimal_linear_model_closed_form
-        timeout: 10
-        max-score: 15
-    - name: A3 · OptimalLinearModel (vector / Normalgleichung)
-      id: a3-optimallinearmodel-vector-normalgleichung
-      uses: classroom-resources/autograding-command-grader@v1
-      with:
-        test-name: A3 · OptimalLinearModel (vector / Normalgleichung)
-        setup-command: python -m pip install --upgrade pip && pip install -r requirements.txt
-        command: pytest -q test_a3_regression.py::test_optimal_linear_model_vector_normal_equation
-        timeout: 10
-        max-score: 15
-    - name: Autograding Reporter
-      uses: classroom-resources/autograding-grading-reporter@v1
-      env:
-        A3-MEAN_SQUARED_ERROR_RESULTS: "${{steps.a3-mean_squared_error.outputs.result}}"
-        A3-SIMPLEGRADIENTDESCENTMODEL-LERNT_RESULTS: "${{steps.a3-simplegradientdescentmodel-lernt.outputs.result}}"
-        A3-GD-FIT-FIT_VECTOR_RESULTS: "${{steps.a3-gd-fit-fit_vector.outputs.result}}"
-        A3-MULTIDIM-GD-VECTOR_RESULTS: "${{steps.a3-multidim-gd-vector.outputs.result}}"
-        A3-OPTIMALLINEARMODEL-CLOSED-FORM_RESULTS: "${{steps.a3-optimallinearmodel-closed-form.outputs.result}}"
-        A3-OPTIMALLINEARMODEL-VECTOR-NORMALGLEICHUNG_RESULTS: "${{steps.a3-optimallinearmodel-vector-normalgleichung.outputs.result}}"
-      with:
-        runners: a3-mean_squared_error,a3-simplegradientdescentmodel-lernt,a3-gd-fit-fit_vector,a3-multidim-gd-vector,a3-optimallinearmodel-closed-form,a3-optimallinearmodel-vector-normalgleichung
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      # Optional: schnellere PyPI-Installs über Cache
+      # - name: Cache pip
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: ~/.cache/pip
+      #     key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-pip-
+
+      - name: Run autograding tests
+        uses: education/autograding@v1
